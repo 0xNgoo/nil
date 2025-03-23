@@ -143,6 +143,14 @@ interface IL1BridgeMessenger is IBridgeMessenger {
   /// @return The list of authorized bridge addresses.
   function getAuthorizedBridges() external view returns (address[] memory);
 
+  function computeMessageHash(
+    address messageSender,
+    address messageTarget,
+    uint256 value,
+    uint256 messageNonce,
+    bytes memory message
+  ) external pure returns (bytes32);
+
   /*//////////////////////////////////////////////////////////////////////////
                            PUBLIC MUTATING FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
@@ -190,6 +198,8 @@ interface IL1BridgeMessenger is IBridgeMessenger {
   /*//////////////////////////////////////////////////////////////////////////
                            RESTRICTED FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+
+  function setCounterpartyBridgeMessenger(address counterpartyBridgeMessengerAddress) external;
 
   /// @notice Authorize a bridge addresses
   /// @param bridges The array of addresses of the bridges to authorize.

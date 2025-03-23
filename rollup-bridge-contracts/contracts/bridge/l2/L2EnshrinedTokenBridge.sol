@@ -183,9 +183,8 @@ contract L2EnshrinedTokenBridge is
     if (!routerAddress.isContract() || !IERC165(routerAddress).supportsInterface(type(IL2BridgeRouter).interfaceId)) {
       revert ErrorInvalidRouter();
     }
-    router = routerAddress;
-
     emit L2BridgeRouterSet(router, routerAddress);
+    router = routerAddress;
   }
 
   /// @inheritdoc IL2Bridge
@@ -201,9 +200,8 @@ contract L2EnshrinedTokenBridge is
       revert ErrorInvalidMessenger();
     }
 
-    messenger = messengerAddress;
-
     emit L2BridgeMessengerSet(messenger, messengerAddress);
+    messenger = messengerAddress;
   }
 
   /// @inheritdoc IL2Bridge
@@ -219,9 +217,8 @@ contract L2EnshrinedTokenBridge is
     ) {
       revert ErrorInvalidCounterpartyBridge();
     }
-    counterpartyBridge = counterpartyBridgeAddress;
-
     emit CounterpartyBridgeSet(counterpartyBridge, counterpartyBridgeAddress);
+    counterpartyBridge = counterpartyBridgeAddress;
   }
 
   /// @inheritdoc IL2EnshrinedTokenBridge

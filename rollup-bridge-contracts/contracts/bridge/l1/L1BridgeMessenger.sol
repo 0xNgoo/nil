@@ -18,6 +18,7 @@ import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.s
 import { Queue } from "../libraries/Queue.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
 import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 
 contract L1BridgeMessenger is
   OwnableUpgradeable,
@@ -28,6 +29,7 @@ contract L1BridgeMessenger is
 {
   using Queue for Queue.QueueData;
   using EnumerableSet for EnumerableSet.AddressSet;
+  using AddressChecker for address;
 
   /*//////////////////////////////////////////////////////////////////////////
                              ERRORS   
@@ -55,6 +57,17 @@ contract L1BridgeMessenger is
                              STATE-VARIABLES   
     //////////////////////////////////////////////////////////////////////////*/
 
+  /// @notice address of the NilRollup contracrt on L1
+  address private l1NilRollup;
+
+  /// @notice The address of counterparty BridgeMessenger contract in L1/NilChain.
+  address public counterpartyBridgeMessenger;
+
+  /**
+   * @notice Holds the addresses of authorized bridges that can interact to send messages.
+   */
+  EnumerableSet.AddressSet private authorizedBridges;
+
   // Add this mapping to store deposit messages by their message hash
   mapping(bytes32 => DepositMessage) public depositMessages;
 
@@ -70,17 +83,6 @@ contract L1BridgeMessenger is
    * The total time for execution is calculated as deposit-time + max-processing-time.
    */
   uint256 public maxProcessingTime;
-
-  /**
-   * @notice Holds the addresses of authorized bridges that can interact to send messages.
-   */
-  EnumerableSet.AddressSet private authorizedBridges;
-
-  /// @notice address of the NilRollup contracrt on L1
-  address private l1NilRollup;
-
-  /// @notice The address of counterparty BridgeMessenger contract in L1/NilChain.
-  address public counterpartyBridgeMessenger;
 
   /// @dev The storage slots for future usage.
   uint256[50] private __gap;
@@ -99,35 +101,26 @@ contract L1BridgeMessenger is
     //////////////////////////////////////////////////////////////////////////*/
 
   function initialize(
-    address _owner,
-    address _defaultAdmin,
-    address _l1NilRollup,
-    uint256 _maxProcessingTime,
-    address _counterpartyBridgeMessenger
+    address ownerAddress,
+    address adminAddress,
+    address l1NilRollupAddress,
+    uint256 maxProcessingTimeValue
   ) public initializer {
     // Validate input parameters
-    if (_owner == address(0)) {
+    if (ownerAddress == address(0)) {
       revert ErrorInvalidOwner();
     }
 
-    if (_defaultAdmin == address(0)) {
+    if (adminAddress == address(0)) {
       revert ErrorInvalidDefaultAdmin();
     }
 
-    if (_owner == address(0)) {
-      revert ErrorInvalidOwner();
-    }
-
-    if (_defaultAdmin == address(0)) {
-      revert ErrorInvalidDefaultAdmin();
-    }
-
-    if (_maxProcessingTime == 0) {
+    if (maxProcessingTimeValue == 0) {
       revert InvalidMaxMessageProcessingTime();
     }
 
     // Initialize the Ownable contract with the owner address
-    OwnableUpgradeable.__Ownable_init(_owner);
+    OwnableUpgradeable.__Ownable_init(ownerAddress);
 
     // Initialize the Pausable contract
     PausableUpgradeable.__Pausable_init();
@@ -148,15 +141,14 @@ contract L1BridgeMessenger is
     // highest level of control.
     // The PROPOSER_ROLE_ADMIN is granted to both the default admin and the owner to allow them to manage proposers.
     // The OWNER_ROLE is granted to the owner to ensure they have the highest level of control over the contract.
-    _grantRole(NilConstants.OWNER_ROLE, _owner);
-    _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+    _grantRole(NilConstants.OWNER_ROLE, ownerAddress);
+    _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
 
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
-    maxProcessingTime = _maxProcessingTime;
+    maxProcessingTime = maxProcessingTimeValue;
     depositNonce = 0;
-    counterpartyBridgeMessenger = _counterpartyBridgeMessenger;
-    l1NilRollup = _l1NilRollup;
+    l1NilRollup = l1NilRollupAddress;
   }
 
   // make sure only owner can send ether to messenger to avoid possible user fund loss.
@@ -178,33 +170,33 @@ contract L1BridgeMessenger is
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IL1BridgeMessenger
-  function getNextDepositNonce() public view returns (uint256) {
+  function getNextDepositNonce() public view override returns (uint256) {
     return depositNonce + 1;
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function getMessageType(bytes32 msgHash) public view returns (NilConstants.MessageType messageType) {
+  function getMessageType(bytes32 msgHash) public view override returns (NilConstants.MessageType messageType) {
     return depositMessages[msgHash].messageType;
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function getDepositMessage(bytes32 msgHash) public view returns (DepositMessage memory depositMessage) {
+  function getDepositMessage(bytes32 msgHash) public view override returns (DepositMessage memory depositMessage) {
     return depositMessages[msgHash];
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function getAuthorizedBridges() external view returns (address[] memory) {
+  function getAuthorizedBridges() external view override returns (address[] memory) {
     return authorizedBridges.values();
   }
 
   function computeMessageHash(
-    address _messageSender,
-    address _messageTarget,
-    uint256 _value,
-    uint256 _messageNonce,
-    bytes memory _message
-  ) public pure returns (bytes32) {
-    return keccak256(abi.encode(_messageSender, _messageTarget, _value, _messageNonce, _message));
+    address messageSender,
+    address messageTarget,
+    uint256 value,
+    uint256 messageNonce,
+    bytes memory message
+  ) public pure override returns (bytes32) {
+    return keccak256(abi.encode(messageSender, messageTarget, value, messageNonce, message));
   }
 
   /*//////////////////////////////////////////////////////////////////////////
@@ -212,7 +204,21 @@ contract L1BridgeMessenger is
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IL1BridgeMessenger
-  function authorizeBridges(address[] calldata bridges) external onlyOwner {
+  function setCounterpartyBridgeMessenger(address counterpartyBridgeMessengerAddress) external override onlyAdmin {
+    _setCounterpartyBridgeMessenger(counterpartyBridgeMessengerAddress);
+  }
+
+  function _setCounterpartyBridgeMessenger(address counterpartyBridgeMessengerAddress) internal {
+    if (!counterpartyBridgeMessengerAddress.isContract()) {
+      revert ErrorInvalidBridgeMessenger();
+    }
+    counterpartyBridgeMessenger = counterpartyBridgeMessengerAddress;
+
+    emit CounterpartyBridgeMessengerSet(counterpartyBridgeMessenger, counterpartyBridgeMessengerAddress);
+  }
+
+  /// @inheritdoc IL1BridgeMessenger
+  function authorizeBridges(address[] calldata bridges) external override onlyOwner {
     for (uint256 i = 0; i < bridges.length; i++) {
       _authorizeBridge(bridges[i]);
     }
@@ -242,7 +248,7 @@ contract L1BridgeMessenger is
   }
 
   /// @inheritdoc IBridgeMessenger
-  function setPause(bool _status) external onlyOwner {
+  function setPause(bool _status) external override onlyOwner {
     if (_status) {
       _pause();
     } else {

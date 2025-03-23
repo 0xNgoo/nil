@@ -156,9 +156,8 @@ contract L2ETHBridge is
     if (!routerAddress.isContract() || !IERC165(routerAddress).supportsInterface(type(IL2BridgeRouter).interfaceId)) {
       revert ErrorInvalidRouter();
     }
-    router = routerAddress;
-
     emit L2BridgeRouterSet(router, routerAddress);
+    router = routerAddress;
   }
 
   /// @inheritdoc IL2Bridge
@@ -173,10 +172,8 @@ contract L2ETHBridge is
     ) {
       revert ErrorInvalidMessenger();
     }
-
-    messenger = messengerAddress;
-
     emit L2BridgeMessengerSet(messenger, messengerAddress);
+    messenger = messengerAddress;
   }
 
   /// @inheritdoc IL2Bridge
@@ -192,9 +189,8 @@ contract L2ETHBridge is
     ) {
       revert ErrorInvalidCounterpartyBridge();
     }
-    counterpartyBridge = counterpartyBridgeAddress;
-
     emit CounterpartyBridgeSet(counterpartyBridge, counterpartyBridgeAddress);
+    counterpartyBridge = counterpartyBridgeAddress;
   }
 
   /// @inheritdoc IL2ETHBridge
@@ -210,9 +206,8 @@ contract L2ETHBridge is
       revert ErrorInvalidEthBridgeVault();
     }
 
-    l2ETHBridgeVault = IL2ETHBridgeVault(l2ETHBridgeVaultAddress);
-
     emit L2ETHBridgeVaultSet(address(l2ETHBridgeVault), l2ETHBridgeVaultAddress);
+    l2ETHBridgeVault = IL2ETHBridgeVault(l2ETHBridgeVaultAddress);
   }
 
   /// @inheritdoc IL2Bridge

@@ -14,8 +14,6 @@ interface IL2BridgeMessenger is IBridgeMessenger {
 
   error ErrorInvalidRelayer();
 
-  error ErrorInvalidBridgeMessenger();
-
   /*//////////////////////////////////////////////////////////////////////////
                              EVENTS
     //////////////////////////////////////////////////////////////////////////*/
@@ -27,11 +25,6 @@ interface IL2BridgeMessenger is IBridgeMessenger {
   event L2BridgeRouterSet(address indexed bridgeRouter, address indexed newBridgeRouter);
 
   event RelayerSet(address indexed relayer, address indexed relayerAddress);
-
-  event CounterpartyBridgeMessengerSet(
-    address indexed counterpartyBridgeMessenger,
-    address indexed counterpartyBridgeMessengerAddress
-  );
 
   /*//////////////////////////////////////////////////////////////////////////
                          PUBLIC CONSTANT FUNCTIONS

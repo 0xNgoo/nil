@@ -44,6 +44,13 @@ interface IBridgeMessenger is IERC165 {
 
   error ErrorInvalidMerkleRoot();
 
+  error ErrorInvalidBridgeMessenger();
+
+  event CounterpartyBridgeMessengerSet(
+    address indexed counterpartyBridgeMessenger,
+    address indexed counterpartyBridgeMessengerAddress
+  );
+
   /**
    * @notice Pauses or unpauses the contract.
    * @dev This function allows the owner to pause or unpause the contract.

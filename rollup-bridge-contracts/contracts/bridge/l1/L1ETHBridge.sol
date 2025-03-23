@@ -59,29 +59,29 @@ contract L1ETHBridge is L1BaseBridge, IL1ETHBridge {
   }
 
   /// @notice Initialize the storage of L1ETHBridge.
-  /// @param _owner The owner of L1ETHBridge in layer-1.
-  /// @param _counterPartyETHBridge The address of ETHBridge on nil-chain
-  /// @param _messenger The address of NilMessenger in layer-1.
+  /// @param ownerAddress The owner of L1ETHBridge
+  /// @param adminAddress The address of admin who is granted DEFAULT_ADMIN role on L1ETHBridge.
+  /// @param messengerAddress The address of L1BridgeMessengewethTokenAddress
+  /// @param nilGasPriceOracleAddress The address of NilGasPriceOracle on L1
   function initialize(
-    address _owner,
-    address _defaultAdmin,
-    address _counterPartyETHBridge,
-    address _messenger,
-    address _nilGasPriceOracle
+    address ownerAddress,
+    address adminAddress,
+    address messengerAddress,
+    address nilGasPriceOracleAddress
   ) public initializer {
     // Validate input parameters
-    if (_owner == address(0)) {
+    if (ownerAddress == address(0)) {
       revert ErrorInvalidOwner();
     }
 
-    if (_defaultAdmin == address(0)) {
+    if (adminAddress == address(0)) {
       revert ErrorInvalidDefaultAdmin();
     }
 
-    if (_nilGasPriceOracle == address(0)) {
+    if (nilGasPriceOracleAddress == address(0)) {
       revert ErrorInvalidNilGasPriceOracle();
     }
-    L1BaseBridge.__L1BaseBridge_init(_owner, _defaultAdmin, _counterPartyETHBridge, _messenger, _nilGasPriceOracle);
+    L1BaseBridge.__L1BaseBridge_init(ownerAddress, adminAddress, messengerAddress, nilGasPriceOracleAddress);
   }
 
   /*//////////////////////////////////////////////////////////////////////////

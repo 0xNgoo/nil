@@ -16,12 +16,14 @@ import { IBridge } from "../interfaces/IBridge.sol";
 import { IL1BridgeMessenger } from "./interfaces/IL1BridgeMessenger.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
 import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 import { L1BaseBridge } from "./L1BaseBridge.sol";
 
 /// @title L1ERC20Bridge
 /// @notice The `L1ERC20Bridge` contract for ERC20Bridging in L1.
 contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
   using SafeTransferLib for ERC20;
+  using AddressChecker for address;
 
   // Define the function selector for finalizeDepositERC20 as a constant
   bytes4 public constant FINALIZE_ERC20_DEPOSIT_SELECTOR = IL2EnshrinedTokenBridge.finalizeERC20Deposit.selector;
@@ -48,45 +50,25 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
   }
 
   /// @notice Initialize the storage of L1ERC20Bridge.
-  /// @param _owner The owner of L1ERC20Bridge in layer-1.
-  /// @param _counterPartyERC20Bridge The address of ERC20Bridge on nil-chain
-  /// @param _messenger The address of NilMessenger in layer-1.
+  /// @param ownerAddress The owner of L1ERC20Bridge
+  /// @param adminAddress The address of admin who is granted DEFAULT_ADMIN role on L1ERC20Bridge.
+  /// @param wethTokenAddress The address of WETH token on L1
+  /// @param messengerAddress The address of L1BridgeMessengewethTokenAddress
+  /// @param nilGasPriceOracleAddress The address of NilGasPriceOracle on L1
   function initialize(
-    address _owner,
-    address _defaultAdmin,
-    address _wethToken,
-    address _counterPartyERC20Bridge,
-    address _messenger,
-    address _nilGasPriceOracle
+    address ownerAddress,
+    address adminAddress,
+    address wethTokenAddress,
+    address messengerAddress,
+    address nilGasPriceOracleAddress
   ) public initializer {
-    // Validate input parameters
-    if (_owner == address(0)) {
-      revert ErrorInvalidOwner();
-    }
-
-    if (_defaultAdmin == address(0)) {
-      revert ErrorInvalidDefaultAdmin();
-    }
-
-    if (_wethToken == address(0)) {
+    if (wethTokenAddress.isContract()) {
       revert ErrorInvalidWethToken();
     }
 
-    if (_counterPartyERC20Bridge == address(0)) {
-      revert ErrorInvalidCounterpartyERC20Bridge();
-    }
+    L1BaseBridge.__L1BaseBridge_init(ownerAddress, adminAddress, messengerAddress, nilGasPriceOracleAddress);
 
-    if (_messenger == address(0)) {
-      revert ErrorInvalidMessenger();
-    }
-
-    if (_nilGasPriceOracle == address(0)) {
-      revert ErrorInvalidNilGasPriceOracle();
-    }
-
-    L1BaseBridge.__L1BaseBridge_init(_owner, _defaultAdmin, _counterPartyERC20Bridge, _messenger, _nilGasPriceOracle);
-
-    wethToken = _wethToken;
+    wethToken = wethTokenAddress;
   }
 
   /*//////////////////////////////////////////////////////////////////////////
@@ -299,10 +281,11 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
 
     address _l2Token = tokenMapping[_l1Token];
 
-    //TODO compute l2TokenAddress
-    //shardId, bytecode, salt, , ... -> l2TokenAddress
-
-    // update the mapping
+    if (_l2Token.isContract()) {
+      //TODO compute l2TokenAddress
+      //shardId, bytecode, salt, , ... -> l2TokenAddress
+      // update the mapping
+    }
 
     if (_l2Token == address(0)) {
       revert ErrorInvalidL2Token();

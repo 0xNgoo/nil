@@ -9,9 +9,11 @@ import { IL1Bridge } from "./interfaces/IL1Bridge.sol";
 import { IL2Bridge } from "../l2/interfaces/IL2Bridge.sol";
 import { IBridge } from "../interfaces/IBridge.sol";
 import { IL1BridgeMessenger } from "./interfaces/IL1BridgeMessenger.sol";
+import { IL1BridgeRouter } from "./interfaces/IL1BridgeRouter.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
 import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 
 abstract contract L1BaseBridge is
   OwnableUpgradeable,
@@ -20,6 +22,8 @@ abstract contract L1BaseBridge is
   ReentrancyGuardUpgradeable,
   IL1Bridge
 {
+  using AddressChecker for address;
+
   /*//////////////////////////////////////////////////////////////////////////
                              ERRORS   
     //////////////////////////////////////////////////////////////////////////*/
@@ -71,49 +75,30 @@ abstract contract L1BaseBridge is
     //////////////////////////////////////////////////////////////////////////*/
 
   function __L1BaseBridge_init(
-    address _owner,
-    address _defaultAdmin,
-    address _counterPartyBridge,
-    address _messenger,
-    address _nilGasPriceOracle
+    address ownerAddress,
+    address adminAddress,
+    address messengerAddress,
+    address nilGasPriceOracleAddress
   ) internal onlyInitializing {
     // Validate input parameters
-    if (_owner == address(0)) {
+    if (ownerAddress == address(0)) {
       revert ErrorInvalidOwner();
     }
 
-    if (_defaultAdmin == address(0)) {
+    if (adminAddress == address(0)) {
       revert ErrorInvalidDefaultAdmin();
     }
 
-    //check if _counterPartyBridge implements IL2Bridge interface
-    if (
-      _counterPartyBridge == address(0) || !IERC165(_counterPartyBridge).supportsInterface(type(IL2Bridge).interfaceId)
-    ) {
-      revert ErrorInvalidCounterpartyBridge();
-    }
-
-    // Check if the messenger contract implements IL1BridgeMessenger
-    if (_messenger == address(0) || !IERC165(_messenger).supportsInterface(type(IL1BridgeMessenger).interfaceId)) {
-      revert ErrorInvalidMessenger();
-    }
-
-    // check if the _nilGasPriceOracle implements IERC165 interface
-    if (
-      _nilGasPriceOracle == address(0) ||
-      !IERC165(_nilGasPriceOracle).supportsInterface(type(INilGasPriceOracle).interfaceId)
-    ) {
-      revert ErrorInvalidNilGasPriceOracle();
-    }
-
     // Initialize the Ownable contract with the owner address
-    OwnableUpgradeable.__Ownable_init(_owner);
+    OwnableUpgradeable.__Ownable_init(ownerAddress);
 
     // Initialize the Pausable contract
     PausableUpgradeable.__Pausable_init();
 
     // Initialize the AccessControlEnumerable contract
     __AccessControlEnumerable_init();
+
+    _setNilGasPriceOracle(nilGasPriceOracleAddress);
 
     // Set role admins
     // The OWNER_ROLE is set as its own admin to ensure that only the current owner can manage this role.
@@ -128,34 +113,79 @@ abstract contract L1BaseBridge is
     // highest level of control.
     // The PROPOSER_ROLE_ADMIN is granted to both the default admin and the owner to allow them to manage proposers.
     // The OWNER_ROLE is granted to the owner to ensure they have the highest level of control over the contract.
-    _grantRole(NilConstants.OWNER_ROLE, _owner);
-    _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+    _grantRole(NilConstants.OWNER_ROLE, ownerAddress);
+    _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
 
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
-    counterpartyBridge = _counterPartyBridge;
-    messenger = _messenger;
-    nilGasPriceOracle = _nilGasPriceOracle;
+    _setMessenger(messengerAddress);
+    _setNilGasPriceOracle(nilGasPriceOracleAddress);
   }
 
   /// @inheritdoc IL1Bridge
-  function setRouter(address _router) external override onlyOwner {
-    router = _router;
+  function setRouter(address routerAddress) external override onlyOwner {
+    router = routerAddress;
+  }
+
+  function _setRouter(address routerAddress) internal {
+    if (routerAddress.isContract() || !IERC165(routerAddress).supportsInterface(type(IL1BridgeRouter).interfaceId)) {
+      revert ErrorInvalidRouter();
+    }
+    emit BridgeRouterSet(router, routerAddress);
+    router = routerAddress;
   }
 
   /// @inheritdoc IL1Bridge
-  function setMessenger(address _messenger) external override onlyOwner {
-    messenger = _messenger;
+  function setMessenger(address messengerAddress) external override onlyOwner {
+    _setMessenger(messengerAddress);
+  }
+
+  function _setMessenger(address messengerAddress) internal {
+    if (
+      !messengerAddress.isContract() ||
+      !IERC165(messengerAddress).supportsInterface(type(IL1BridgeMessenger).interfaceId)
+    ) {
+      revert ErrorInvalidMessenger();
+    }
+    emit BridgeMessengerSet(messenger, messengerAddress);
+    messenger = messengerAddress;
   }
 
   /// @inheritdoc IL1Bridge
   function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwner {
+    _setCounterpartyBridge(counterpartyBridgeAddress);
+  }
+
+  function _setCounterpartyBridge(address counterpartyBridgeAddress) internal {
+    if (
+      !counterpartyBridgeAddress.isContract() ||
+      !IERC165(counterpartyBridgeAddress).supportsInterface(type(IL2Bridge).interfaceId)
+    ) {
+      revert ErrorInvalidNilGasPriceOracle();
+    }
+    emit CounterpartyBridgeSet(counterpartyBridge, counterpartyBridgeAddress);
     counterpartyBridge = counterpartyBridgeAddress;
   }
 
   /// @inheritdoc IL1Bridge
-  function setNilGasPriceOracle(address _nilGasPriceOracle) external override onlyAdmin {
-    nilGasPriceOracle = _nilGasPriceOracle;
+  function setNilGasPriceOracle(address nilGasPriceOracleAddress) external override {
+    if (!hasRole(NilConstants.GAS_PRICE_SETTER_ROLE, msg.sender)) {
+      revert UnAuthorizedCaller();
+    }
+
+    _setNilGasPriceOracle(nilGasPriceOracleAddress);
+  }
+
+  function _setNilGasPriceOracle(address nilGasPriceOracleAddress) internal {
+    if (
+      !nilGasPriceOracleAddress.isContract() ||
+      !IERC165(nilGasPriceOracleAddress).supportsInterface(type(INilGasPriceOracle).interfaceId)
+    ) {
+      revert ErrorInvalidNilGasPriceOracle();
+    }
+
+    emit NilGasPriceOracleSet(nilGasPriceOracle, nilGasPriceOracleAddress);
+    nilGasPriceOracle = nilGasPriceOracleAddress;
   }
 
   /*//////////////////////////////////////////////////////////////////////////

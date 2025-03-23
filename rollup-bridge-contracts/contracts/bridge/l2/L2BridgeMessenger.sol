@@ -261,9 +261,8 @@ contract L2BridgeMessenger is OwnableUpgradeable, PausableUpgradeable, NilAccess
     if (!counterpartyBridgeMessengerAddress.isContract()) {
       revert ErrorInvalidBridgeMessenger();
     }
-    counterpartyBridgeMessenger = counterpartyBridgeMessengerAddress;
-
     emit CounterpartyBridgeMessengerSet(counterpartyBridgeMessenger, counterpartyBridgeMessengerAddress);
+    counterpartyBridgeMessenger = counterpartyBridgeMessengerAddress;
   }
 
   /// @inheritdoc IL2BridgeMessenger

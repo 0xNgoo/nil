@@ -8,6 +8,14 @@ interface IL1Bridge is IBridge {
                              EVENTS
     //////////////////////////////////////////////////////////////////////////*/
 
+  event CounterpartyBridgeSet(address indexed counterpartyBridge, address indexed newCounterpartyBridge);
+
+  event BridgeMessengerSet(address indexed messenger, address indexed newMessenger);
+
+  event BridgeRouterSet(address indexed router, address indexed newRouter);
+
+  event NilGasPriceOracleSet(address indexed nilGasPriceOracle, address indexed newNilGasPriceOracle);
+
   /**
    * @notice Emitted when a deposit is claimed.
    * @param messageHash The hash of the deposit message.
