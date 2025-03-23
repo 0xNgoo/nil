@@ -207,9 +207,4 @@ abstract contract L1BaseBridge is
     super.transferOwnership(newOwner);
     _grantRole(NilConstants.OWNER_ROLE, newOwner);
   }
-
-  /// @inheritdoc IERC165
-  function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
-    return interfaceId == type(IL1Bridge).interfaceId || super.supportsInterface(interfaceId);
-  }
 }

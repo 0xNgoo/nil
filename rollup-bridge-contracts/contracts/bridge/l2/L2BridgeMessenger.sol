@@ -52,7 +52,8 @@ contract L2BridgeMessenger is OwnableUpgradeable, PausableUpgradeable, NilAccess
   /// @dev initialize with the genesis state Hash during the contract initialisation
   bytes32 public l1MessageHash;
 
-  /// @notice merkleRoot of the merkleTree with messageHash of the relayed messages with failedExecution and withdrawalMessages sent from messenger.
+  /// @notice merkleRoot of the merkleTree with messageHash of the relayed messages with failedExecution and
+  /// withdrawalMessages sent from messenger.
   bytes32 public l2Tol1Root;
 
   /// @dev The storage slots for future usage.

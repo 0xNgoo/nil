@@ -19,6 +19,7 @@ import { Queue } from "../libraries/Queue.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
 import { NilConstants } from "../../common/libraries/NilConstants.sol";
 import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
+import { IL2BridgeMessenger } from "../l2/interfaces/IL2BridgeMessenger.sol";
 
 contract L1BridgeMessenger is
   OwnableUpgradeable,
@@ -209,9 +210,13 @@ contract L1BridgeMessenger is
   }
 
   function _setCounterpartyBridgeMessenger(address counterpartyBridgeMessengerAddress) internal {
-    if (!counterpartyBridgeMessengerAddress.isContract()) {
+    if (
+      !counterpartyBridgeMessengerAddress.isContract() ||
+      !IERC165(counterpartyBridgeMessengerAddress).supportsInterface(type(IL2BridgeMessenger).interfaceId)
+    ) {
       revert ErrorInvalidBridgeMessenger();
     }
+
     counterpartyBridgeMessenger = counterpartyBridgeMessengerAddress;
 
     emit CounterpartyBridgeMessengerSet(counterpartyBridgeMessenger, counterpartyBridgeMessengerAddress);

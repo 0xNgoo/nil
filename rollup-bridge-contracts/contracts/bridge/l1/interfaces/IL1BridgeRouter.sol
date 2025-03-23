@@ -34,26 +34,37 @@ interface IL1BridgeRouter {
 
   error ErrorInvalidL2FeeRefundRecipient();
 
+  error ErrorInvalidMessenger();
+
+  error ErrorInvalidERC20Bridge();
+
   /**
    * @notice Emitted when the L1ERC20Bridge address is set.
-   * @param oldL1ERC20Bridge The previous L1ERC20Bridge address.
-   * @param newL1ERC20Bridge The new L1ERC20Bridge address.
+   * @param oldERC20Bridge The previous L1ERC20Bridge address.
+   * @param newERC20Bridge The new L1ERC20Bridge address.
    */
-  event L1ERC20BridgeSet(address indexed oldL1ERC20Bridge, address indexed newL1ERC20Bridge);
+  event ERC20BridgeSet(address indexed oldERC20Bridge, address indexed newERC20Bridge);
 
   /**
    * @notice Emitted when the L1ETHBridge address is set.
-   * @param oldL1ETHBridge The previous L1ETHBridge address.
-   * @param newL1ETHBridge The new L1ETHBridge address.
+   * @param oldETHBridge The previous L1ETHBridge address.
+   * @param newETHBridge The new L1ETHBridge address.
    */
-  event L1ETHBridgeSet(address indexed oldL1ETHBridge, address indexed newL1ETHBridge);
+  event ETHBridgeSet(address indexed oldETHBridge, address indexed newETHBridge);
 
   /**
    * @notice Emitted when the L1BridgeMessenger address is set.
-   * @param oldL1BridgeMessenger The previous L1BridgeMessenger address.
-   * @param newL1BridgeMessenger The new L1BridgeMessenger address.
+   * @param oldMessenger The previous L1BridgeMessenger address.
+   * @param newMessenger The new L1BridgeMessenger address.
    */
-  event L1BridgeMessengerSet(address indexed oldL1BridgeMessenger, address indexed newL1BridgeMessenger);
+  event MessengerSet(address indexed oldMessenger, address indexed newMessenger);
+
+  /**
+   * @notice Emitted when the WETH address is set.
+   * @param oldWETH The previous WETH address.
+   * @param newWETH The new WETH address.
+   */
+  event WETHSet(address indexed oldWETH, address indexed newWETH);
 
   /**
    * @notice Returns the L2 token address corresponding to the given L1 token address.
@@ -66,37 +77,50 @@ interface IL1BridgeRouter {
    * @notice Returns the address of the L1ERC20Bridge contract.
    * @return The address of the L1ERC20Bridge contract.
    */
-  function l1ERC20Bridge() external view returns (address);
+  function erc20Bridge() external view returns (address);
 
   /**
    * @notice Returns the address of the L1ETHBridge contract.
    * @return The address of the L1ETHBridge contract.
    */
-  function l1ETHBridge() external view returns (address);
+  function ethBridge() external view returns (address);
 
   /**
    * @notice Returns the address of the L1WETH contract.
    * @return The address of the L1WETH contract.
    */
-  function l1WETHAddress() external view returns (address);
+  function wethAddress() external view returns (address);
 
   /**
    * @notice Sets the address of the L1ERC20Bridge contract.
    * @param newERC20Bridge The new address of the L1ERC20Bridge contract.
    */
-  function setL1ERC20Bridge(address newERC20Bridge) external;
+  function setERC20Bridge(address newERC20Bridge) external;
 
   /**
    * @notice Sets the address of the L1ETHBridge contract.
-   * @param newL1ETHBridge The new address of the L1ETHBridge contract.
+   * @param ethBridge The new address of the L1ETHBridge contract.
    */
-  function setL1ETHBridge(address newL1ETHBridge) external;
+  function setETHBridge(address ethBridge) external;
+
+  /**
+   * @notice Sets the address of the L1BridgeMessenger contract.
+   * @param messenger The new address of the L1BridgeMessenger contract.
+   */
+  function setMessenger(address messenger) external;
+
+  /**
+   * @notice Sets the address of the wethAddress
+   * @param wethAddress The new wethAddress on L1
+   */
+  function setWETHAddress(address wethAddress) external;
 
   /**
    * @notice Pulls ERC20 tokens from the sender to the bridge contract.
    * @dev This function can only be called by authorized bridge contracts.
    * @dev All bridge contracts must have reentrancy guard to prevent potential attack through this function.
-   * @dev L1Bridge Contract - L1ERC20Bridge will call this function to let the router pull the tokens from the depositor to the corresponding bridge address.
+   * @dev L1Bridge Contract - L1ERC20Bridge will call this function to let the router pull the tokens from the
+   * depositor to the corresponding bridge address.
    * @dev This function is invoked only when the depositor calls L1BridgeRouter for bridging.
    * @param sender The address of the sender from whom the tokens will be pulled.
    * @param token The address of the ERC20 token to be pulled.

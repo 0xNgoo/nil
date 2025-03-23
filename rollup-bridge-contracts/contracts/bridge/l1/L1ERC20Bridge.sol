@@ -374,4 +374,12 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
         additionalData: data
       });
   }
+
+  /// @inheritdoc IERC165
+  function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+    return
+      interfaceId == type(IL1ERC20Bridge).interfaceId ||
+      interfaceId == type(IL1Bridge).interfaceId ||
+      super.supportsInterface(interfaceId);
+  }
 }

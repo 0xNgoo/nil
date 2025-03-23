@@ -83,7 +83,8 @@ contract L2ETHBridgeVault is
 
   /// @notice Receive function to accept ETH, only callable by the l2ETHBridge or Owner
   /// @dev owner of the contract must fund the Vault with ETH
-  /// @dev L2EthBridgeVault will transfer ETH to the vault while processing ETH-withdrawal request from user (smart-account)
+  /// @dev L2EthBridgeVault will transfer ETH to the vault while processing ETH-withdrawal request from user
+  /// (smart-account)
   /// @dev Either owner or L2EthBridgeVault are allowed to transfer ETH to the vault contract
   receive() external payable {
     if (

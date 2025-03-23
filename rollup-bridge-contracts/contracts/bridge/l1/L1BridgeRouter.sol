@@ -4,10 +4,12 @@ pragma solidity 0.8.28;
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { NilConstants } from "../../common/libraries/NilConstants.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 import { IL1ERC20Bridge } from "./interfaces/IL1ERC20Bridge.sol";
 import { IL1ETHBridge } from "./interfaces/IL1ETHBridge.sol";
 import { IL1BridgeRouter } from "./interfaces/IL1BridgeRouter.sol";
@@ -25,22 +27,23 @@ contract L1BridgeRouter is
     IL1BridgeRouter
 {
     using SafeTransferLib for ERC20;
+    using AddressChecker for address;
 
     /*//////////////////////////////////////////////////////////////////////////
                              STATE-VARIABLES   
     //////////////////////////////////////////////////////////////////////////*/
 
-    /// @notice The addess of L1ERC20Bridge
-    address public override l1ERC20Bridge;
+    /// @notice The addess of ERC20Bridge
+    address public override erc20Bridge;
 
-    /// @notice The address of L1EthBridge
-    address public override l1ETHBridge;
+    /// @notice The address of ETHBridge
+    address public override ethBridge;
 
-    /// @notice The address of the L1WETH contract.
-    address public override l1WETHAddress;
+    /// @notice The addess of BridgeMessenger on L1
+    IL1BridgeMessenger public messenger;
 
-    /// @notice The addess of L1BridgeMessenger
-    IL1BridgeMessenger public l1BridgeMessenger;
+    /// @notice The address of the WETH token
+    address public override wethAddress;
 
     /// @notice The address of l1Bridge in current execution context.
     address transient public l1BridgeInContext;
@@ -72,31 +75,34 @@ contract L1BridgeRouter is
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @notice Initialize the storage of L1BridgeRouter.
-    /// @param _l1ERC20Bridge The address of l1ERC20Bridge contract.
-    /// @param _l1ETHBridge The address of l1ETHBridge contract.
-    /// @param _l1BridgeMessenger The address of l1BridgeMessenger contract.
+    /// @param ownerAddress The address of owner for L1BridgeRouter contract.
+    /// @param adminAddress The address of admin for L1BridgeRouter contract.
+    /// @param erc20BridgeAddress The address of L1ERC20Bridge contract.
+    /// @param ethBridgeAddress The address of L1ETHBridge contract.
+    /// @param messengerAddress The address of L1BridgeMessenger contract.
+    /// @param weth The address of weth token on L1.
     function initialize(
-        address _owner,
-        address _defaultAdmin,
-        address _l1ERC20Bridge,
-        address _l1ETHBridge,
-        address _l1BridgeMessenger,
-        address _l1WETHAddress
+        address ownerAddress,
+        address adminAddress,
+        address erc20BridgeAddress,
+        address ethBridgeAddress,
+        address messengerAddress,
+        address weth
     )
         public
         initializer
     {
         // Validate input parameters
-        if (_owner == address(0)) {
+        if (ownerAddress == address(0)) {
             revert ErrorInvalidOwner();
         }
 
-        if (_defaultAdmin == address(0)) {
+        if (adminAddress == address(0)) {
             revert ErrorInvalidDefaultAdmin();
         }
 
         // Initialize the Ownable contract with the owner address
-        OwnableUpgradeable.__Ownable_init(_owner);
+        OwnableUpgradeable.__Ownable_init(ownerAddress);
 
         // Initialize the Pausable contract
         PausableUpgradeable.__Pausable_init();
@@ -117,18 +123,15 @@ contract L1BridgeRouter is
         // highest level of control.
         // The PROPOSER_ROLE_ADMIN is granted to both the default admin and the owner to allow them to manage proposers.
         // The OWNER_ROLE is granted to the owner to ensure they have the highest level of control over the contract.
-        _grantRole(NilConstants.OWNER_ROLE, _owner);
-        _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+        _grantRole(NilConstants.OWNER_ROLE, ownerAddress);
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
 
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
-        l1ERC20Bridge = _l1ERC20Bridge;
-        l1ETHBridge = _l1ETHBridge;
-        l1BridgeMessenger = IL1BridgeMessenger(_l1BridgeMessenger);
-        l1WETHAddress = _l1WETHAddress;
-        emit L1ERC20BridgeSet(address(0), _l1ERC20Bridge);
-        emit L1ETHBridgeSet(address(0), _l1ETHBridge);
-        emit L1BridgeMessengerSet(address(0), address(_l1BridgeMessenger));
+        _setERC20Bridge(erc20BridgeAddress);
+        _setETHBridge(ethBridgeAddress);
+        _setMessenger(messengerAddress);
+        _setWETHAddress(weth);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -137,7 +140,7 @@ contract L1BridgeRouter is
 
     /// @inheritdoc IL1BridgeRouter
     function getL2TokenAddress(address _l1TokenAddress) external view override returns (address) {
-        return IL1ERC20Bridge(l1ERC20Bridge).getL2TokenAddress(_l1TokenAddress);
+        return IL1ERC20Bridge(erc20Bridge).getL2TokenAddress(_l1TokenAddress);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -149,7 +152,7 @@ contract L1BridgeRouter is
         address _bridgeAddress = _msgSender();
 
         // Validate that the caller is one of the authorized bridges
-        if (_bridgeAddress != address(l1ERC20Bridge)) {
+        if (_bridgeAddress != address(erc20Bridge)) {
             revert ErrorUnauthorizedCaller();
         }
 
@@ -189,31 +192,38 @@ contract L1BridgeRouter is
         override
         onlyNotInContext
     {
-        if(token == address(0)) {
-          revert ErrorInvalidTokenAddress();
+        if (token == address(0)) {
+            revert ErrorInvalidTokenAddress();
         }
 
-        if (token == l1WETHAddress) {
+        if (token == wethAddress) {
             revert ErrorWETHTokenNotSupported();
         }
 
-        if(l1ERC20Bridge == address(0)) {
-          revert ErrorInvalidL1ERC20BridgeAddress();
+        if (erc20Bridge == address(0)) {
+            revert ErrorInvalidL1ERC20BridgeAddress();
         }
 
-        if(depositAmount == 0) {
-          revert ErrorEmptyDeposit();
+        if (depositAmount == 0) {
+            revert ErrorEmptyDeposit();
         }
 
-        if(nilGasLimit == 0) {
-          revert ErrorInvalidNilGasLimit();
+        if (nilGasLimit == 0) {
+            revert ErrorInvalidNilGasLimit();
         }
 
         // enter deposit context
-        l1BridgeInContext = l1ERC20Bridge;
+        l1BridgeInContext = erc20Bridge;
 
-        IL1ERC20Bridge(l1ERC20Bridge).depositERC20ViaRouter{ value: msg.value }(
-            token, l2DepositRecipient, depositAmount, l2FeeRefundRecipient, _msgSender(), nilGasLimit, userFeePerGas, userMaxPriorityFeePerGas
+        IL1ERC20Bridge(erc20Bridge).depositERC20ViaRouter{ value: msg.value }(
+            token,
+            l2DepositRecipient,
+            depositAmount,
+            l2FeeRefundRecipient,
+            _msgSender(),
+            nilGasLimit,
+            userFeePerGas,
+            userMaxPriorityFeePerGas
         );
 
         // leave deposit context
@@ -234,31 +244,37 @@ contract L1BridgeRouter is
         override
         onlyNotInContext
     {
-        if(l1ETHBridge == address(0)) {
-          revert ErrorInvalidL1ETHBridgeAddress();
+        if (ethBridge == address(0)) {
+            revert ErrorInvalidL1ETHBridgeAddress();
         }
 
-        if(l2DepositRecipient == address(0)) {
-          revert ErrorInvalidL2DepositRecipient();
+        if (l2DepositRecipient == address(0)) {
+            revert ErrorInvalidL2DepositRecipient();
         }
 
-        if(depositAmount == 0) {
-          revert ErrorEmptyDeposit();
+        if (depositAmount == 0) {
+            revert ErrorEmptyDeposit();
         }
 
-        if(l2FeeRefundRecipient == address(0)) {
-          revert ErrorInvalidL2FeeRefundRecipient();
+        if (l2FeeRefundRecipient == address(0)) {
+            revert ErrorInvalidL2FeeRefundRecipient();
         }
 
-        if(nilGasLimit == 0) {
-          revert ErrorInvalidNilGasLimit();
+        if (nilGasLimit == 0) {
+            revert ErrorInvalidNilGasLimit();
         }
 
         // enter deposit context
-        l1BridgeInContext = l1ETHBridge;
+        l1BridgeInContext = ethBridge;
 
-        IL1ETHBridge(l1ETHBridge).depositETHViaRouter{ value: msg.value }(
-            l2DepositRecipient, depositAmount, l2FeeRefundRecipient, _msgSender(), nilGasLimit, userFeePerGas, userMaxPriorityFeePerGas
+        IL1ETHBridge(ethBridge).depositETHViaRouter{ value: msg.value }(
+            l2DepositRecipient,
+            depositAmount,
+            l2FeeRefundRecipient,
+            _msgSender(),
+            nilGasLimit,
+            userFeePerGas,
+            userMaxPriorityFeePerGas
         );
 
         // leave deposit context
@@ -268,13 +284,13 @@ contract L1BridgeRouter is
     /// @inheritdoc IL1BridgeRouter
     function cancelDeposit(bytes32 messageHash) external payable {
         // Get the deposit message from the messenger
-        NilConstants.MessageType messageType = l1BridgeMessenger.getMessageType(messageHash);
+        NilConstants.MessageType messageType = messenger.getMessageType(messageHash);
 
         // Route the cancellation request based on the deposit type
         if (messageType == NilConstants.MessageType.DEPOSIT_ERC20) {
-            IL1ERC20Bridge(l1ERC20Bridge).cancelDeposit(messageHash);
+            IL1ERC20Bridge(erc20Bridge).cancelDeposit(messageHash);
         } else if (messageType == NilConstants.MessageType.DEPOSIT_ETH) {
-            IL1ETHBridge(l1ERC20Bridge).cancelDeposit(messageHash);
+            IL1ETHBridge(ethBridge).cancelDeposit(messageHash);
         } else {
             revert ErrorInvalidMessageType();
         }
@@ -283,13 +299,13 @@ contract L1BridgeRouter is
     /// @inheritdoc IL1BridgeRouter
     function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) external override {
         // Get the deposit message from the messenger
-        NilConstants.MessageType messageType = l1BridgeMessenger.getMessageType(messageHash);
+        NilConstants.MessageType messageType = messenger.getMessageType(messageHash);
 
         // Route the cancellation request based on the deposit type
         if (messageType == NilConstants.MessageType.DEPOSIT_ERC20) {
-            IL1ERC20Bridge(l1ERC20Bridge).claimFailedDeposit(messageHash, claimProof);
+            IL1ERC20Bridge(erc20Bridge).claimFailedDeposit(messageHash, claimProof);
         } else if (messageType == NilConstants.MessageType.DEPOSIT_ETH) {
-            IL1ETHBridge(l1ERC20Bridge).claimFailedDeposit(messageHash, claimProof);
+            IL1ETHBridge(ethBridge).claimFailedDeposit(messageHash, claimProof);
         } else {
             revert ErrorInvalidMessageType();
         }
@@ -299,35 +315,96 @@ contract L1BridgeRouter is
                            RESTRICTED FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
-  /// @inheritdoc IL1BridgeRouter
-  function setL1ERC20Bridge(address _newERC20Bridge) external onlyOwner {
-      address _oldERC20Bridge = l1ERC20Bridge;
-      l1ERC20Bridge = _newERC20Bridge;
-
-      emit L1ERC20BridgeSet(_oldERC20Bridge, _newERC20Bridge);
-  }
-
-  /// @inheritdoc IL1BridgeRouter
-  function setL1ETHBridge(address newL1ETHBridge) external onlyOwner {
-      address oldL1ETHBridge = l1ETHBridge;
-      l1ETHBridge = newL1ETHBridge;
-
-      emit L1ETHBridgeSet(oldL1ETHBridge, newL1ETHBridge);
-  }
-
-  /// @inheritdoc IL1BridgeRouter
-  function setPause(bool _status) external onlyOwner {
-    if (_status) {
-      _pause();
-    } else {
-      _unpause();
+    /// @inheritdoc IL1BridgeRouter
+    function setERC20Bridge(address erc20BridgeAddress) external override onlyOwner {
+        _setERC20Bridge(erc20BridgeAddress);
     }
-  }
 
-  /// @inheritdoc IL1BridgeRouter
-  function transferOwnershipRole(address newOwner) external override onlyOwner {
-    _revokeRole(NilConstants.OWNER_ROLE, owner());
-    super.transferOwnership(newOwner);
-    _grantRole(NilConstants.OWNER_ROLE, newOwner);
+    function _setERC20Bridge(address _erc20BridgeAddress) internal {
+
+        if (
+            !_erc20BridgeAddress.isContract()
+                || !IERC165(_erc20BridgeAddress).supportsInterface(type(IL1ERC20Bridge).interfaceId)
+        ) {
+            revert ErrorInvalidERC20Bridge();
+        }
+        address oldERC20Bridge = erc20Bridge;
+        erc20Bridge = _erc20BridgeAddress;
+        emit ERC20BridgeSet(oldERC20Bridge, _erc20BridgeAddress);
+    }
+
+    /// @inheritdoc IL1BridgeRouter
+    function setETHBridge(address ethBridgeAddress) external override onlyOwner {
+        _setETHBridge(ethBridgeAddress);
+    }
+
+    function _setETHBridge(address _ethBridgeAddress) internal {
+
+        if (
+            !_ethBridgeAddress.isContract()
+                || !IERC165(_ethBridgeAddress).supportsInterface(type(IL1ETHBridge).interfaceId)
+        ) {
+            revert ErrorInvalidL1ETHBridgeAddress();
+        }
+        address oldETHBridge = ethBridge;
+        ethBridge = _ethBridgeAddress;
+        emit ETHBridgeSet(oldETHBridge, _ethBridgeAddress);
+    }
+
+    /// @inheritdoc IL1BridgeRouter
+    function setWETHAddress(address weth) external override onlyOwner {
+        _setWETHAddress(weth);
+    }
+
+    function _setWETHAddress(address _weth) internal {
+
+        if (!_weth.isContract()) {
+            revert ErrorInvalidTokenAddress();
+        }
+
+        address oldWETHAddress = wethAddress;
+        wethAddress = _weth;
+        emit WETHSet(oldWETHAddress, _weth);
+    }
+
+    /// @inheritdoc IL1BridgeRouter
+    function setMessenger(address messengerAddress) external override onlyOwner {
+        _setMessenger(messengerAddress);
+    }
+
+    function _setMessenger(address _messengerAddress) internal {
+        if (
+            !_messengerAddress.isContract()
+                || !IERC165(_messengerAddress).supportsInterface(type(IL1BridgeMessenger).interfaceId)
+        ) {
+            revert ErrorInvalidMessenger();
+        }
+
+        address oldMessenger = _messengerAddress;
+        messenger = IL1BridgeMessenger(_messengerAddress);
+        emit MessengerSet(oldMessenger, _messengerAddress);
+    }
+
+    /// @inheritdoc IL1BridgeRouter
+    function setPause(bool _status) external onlyOwner {
+        if (_status) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+    /// @inheritdoc IL1BridgeRouter
+    function transferOwnershipRole(address newOwner) external override onlyOwner {
+        _revokeRole(NilConstants.OWNER_ROLE, owner());
+        super.transferOwnership(newOwner);
+        _grantRole(NilConstants.OWNER_ROLE, newOwner);
+    }
+
+    /// @inheritdoc IERC165
+  function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+    return
+      interfaceId == type(IL1BridgeRouter).interfaceId ||
+      super.supportsInterface(interfaceId);
   }
 }

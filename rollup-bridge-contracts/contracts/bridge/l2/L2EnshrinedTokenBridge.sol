@@ -25,9 +25,11 @@ contract L2EnshrinedTokenBridge is
 {
   using AddressChecker for address;
 
-  /*************
+  /**
+   *
    * Variables *
-   *************/
+   *
+   */
 
   /// @notice address of the counterparty Bridge (L1ERC20Bridge)
   address public override counterpartyBridge;

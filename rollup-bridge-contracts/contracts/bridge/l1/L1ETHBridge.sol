@@ -296,4 +296,12 @@ contract L1ETHBridge is L1BaseBridge, IL1ETHBridge {
         depositAmount: depositAmount
       });
   }
+
+  /// @inheritdoc IERC165
+  function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+    return
+      interfaceId == type(IL1ETHBridge).interfaceId ||
+      interfaceId == type(IL1Bridge).interfaceId ||
+      super.supportsInterface(interfaceId);
+  }
 }
