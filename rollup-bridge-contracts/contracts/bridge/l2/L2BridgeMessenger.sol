@@ -254,7 +254,9 @@ contract L2BridgeMessenger is OwnableUpgradeable, PausableUpgradeable, NilAccess
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IL2BridgeMessenger
-  function setCounterpartyBridgeMessenger(address counterpartyBridgeMessengerAddress) external override onlyAdmin {
+  function setCounterpartyBridgeMessenger(
+    address counterpartyBridgeMessengerAddress
+  ) external override onlyOwnerOrAdmin {
     _setCounterpartyBridgeMessenger(counterpartyBridgeMessengerAddress);
   }
 
@@ -267,14 +269,14 @@ contract L2BridgeMessenger is OwnableUpgradeable, PausableUpgradeable, NilAccess
   }
 
   /// @inheritdoc IL2BridgeMessenger
-  function authoriseBridges(address[] calldata bridges) external override onlyAdmin {
+  function authoriseBridges(address[] calldata bridges) external override onlyOwnerOrAdmin {
     for (uint256 i = 0; i < bridges.length; i++) {
       _authoriseBridge(bridges[i]);
     }
   }
 
   /// @inheritdoc IL2BridgeMessenger
-  function authoriseBridge(address bridge) external override onlyAdmin {
+  function authoriseBridge(address bridge) external override onlyOwnerOrAdmin {
     _authoriseBridge(bridge);
   }
 
@@ -289,7 +291,7 @@ contract L2BridgeMessenger is OwnableUpgradeable, PausableUpgradeable, NilAccess
   }
 
   /// @inheritdoc IL2BridgeMessenger
-  function revokeBridgeAuthorisation(address bridge) external override onlyAdmin {
+  function revokeBridgeAuthorisation(address bridge) external override onlyOwnerOrAdmin {
     if (!authorisedBridges.contains(bridge)) {
       revert ErrorBridgeNotAuthorised();
     }
@@ -297,7 +299,7 @@ contract L2BridgeMessenger is OwnableUpgradeable, PausableUpgradeable, NilAccess
   }
 
   /// @inheritdoc IL2BridgeMessenger
-  function setPause(bool _status) external onlyAdmin {
+  function setPause(bool _status) external onlyOwnerOrAdmin {
     if (_status) {
       _pause();
     } else {

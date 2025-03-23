@@ -7,6 +7,8 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { IL1ERC20Bridge } from "./interfaces/IL1ERC20Bridge.sol";
 import { IL2EnshrinedTokenBridge } from "../l2/interfaces/IL2EnshrinedTokenBridge.sol";
@@ -15,8 +17,6 @@ import { IL1Bridge } from "./interfaces/IL1Bridge.sol";
 import { IBridge } from "../interfaces/IBridge.sol";
 import { IL1BridgeMessenger } from "./interfaces/IL1BridgeMessenger.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
-import { NilConstants } from "../../common/libraries/NilConstants.sol";
-import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 import { L1BaseBridge } from "./L1BaseBridge.sol";
 
 /// @title L1ERC20Bridge

@@ -6,9 +6,9 @@ import { AccessControlEnumerableUpgradeable } from "@openzeppelin/contracts-upgr
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { NilConstants } from "../../common/libraries/NilConstants.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
+import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 
 // solhint-disable reason-string
 contract NilGasPriceOracle is OwnableUpgradeable, PausableUpgradeable, NilAccessControlUpgradeable, INilGasPriceOracle {

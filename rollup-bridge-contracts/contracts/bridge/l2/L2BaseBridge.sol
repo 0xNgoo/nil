@@ -113,7 +113,7 @@ abstract contract L2BaseBridge is
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IL2Bridge
-  function setRouter(address routerAddress) external override onlyOwner {
+  function setRouter(address routerAddress) external override onlyOwnerOrAdmin {
     router = routerAddress;
   }
 
@@ -126,7 +126,7 @@ abstract contract L2BaseBridge is
   }
 
   /// @inheritdoc IL2Bridge
-  function setMessenger(address messengerAddress) external override onlyOwner {
+  function setMessenger(address messengerAddress) external override onlyOwnerOrAdmin {
     _setMessenger(messengerAddress);
   }
 
@@ -142,7 +142,7 @@ abstract contract L2BaseBridge is
   }
 
   /// @inheritdoc IL2Bridge
-  function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwner {
+  function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwnerOrAdmin {
     _setCounterpartyBridge(counterpartyBridgeAddress);
   }
 
@@ -163,7 +163,7 @@ abstract contract L2BaseBridge is
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IBridge
-  function setPause(bool _status) external onlyOwner {
+  function setPause(bool _status) external onlyOwnerOrAdmin {
     if (_status) {
       _pause();
     } else {

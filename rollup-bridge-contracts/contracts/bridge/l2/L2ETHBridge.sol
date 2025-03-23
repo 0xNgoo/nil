@@ -76,15 +76,17 @@ contract L2ETHBridge is L2BaseBridge, IL2ETHBridge {
     uint256 amount
   ) public payable onlyMessenger {
     // get recipient balance before ETH transfer
-    uint256 befBalance = feeRefundRecipient.balance;
+    uint256 befBalance = depositRecipient.balance;
 
     // call sendEth on L2ETHBridgeVault
     l2ETHBridgeVault.transferETH(depositRecipient, amount);
 
     // check for balance change of recipient
-    if (feeRefundRecipient.balance - befBalance != amount) {
+    if (depositRecipient.balance - befBalance != amount) {
       revert ErrorIncompleteETHDeposit();
     }
+
+    // TODO handle feeRefund
 
     // emit FinalisedETHDepositEvent
     emit FinaliseETHDeposit(depositorAddress, depositRecipient, amount);
@@ -95,7 +97,7 @@ contract L2ETHBridge is L2BaseBridge, IL2ETHBridge {
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IL2ETHBridge
-  function setL2ETHBridgeVault(address l2ETHBridgeVaultAddress) external override onlyAdmin {
+  function setL2ETHBridgeVault(address l2ETHBridgeVaultAddress) external override onlyOwnerOrAdmin {
     _setL2ETHBridgeVault(l2ETHBridgeVaultAddress);
   }
 

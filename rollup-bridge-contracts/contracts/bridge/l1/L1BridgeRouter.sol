@@ -316,7 +316,7 @@ contract L1BridgeRouter is
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IL1BridgeRouter
-    function setERC20Bridge(address erc20BridgeAddress) external override onlyOwner {
+    function setERC20Bridge(address erc20BridgeAddress) external override onlyOwnerOrAdmin {
         _setERC20Bridge(erc20BridgeAddress);
     }
 
@@ -334,7 +334,7 @@ contract L1BridgeRouter is
     }
 
     /// @inheritdoc IL1BridgeRouter
-    function setETHBridge(address ethBridgeAddress) external override onlyOwner {
+    function setETHBridge(address ethBridgeAddress) external override onlyOwnerOrAdmin {
         _setETHBridge(ethBridgeAddress);
     }
 
@@ -352,7 +352,7 @@ contract L1BridgeRouter is
     }
 
     /// @inheritdoc IL1BridgeRouter
-    function setWETHAddress(address weth) external override onlyOwner {
+    function setWETHAddress(address weth) external override onlyOwnerOrAdmin {
         _setWETHAddress(weth);
     }
 
@@ -368,7 +368,7 @@ contract L1BridgeRouter is
     }
 
     /// @inheritdoc IL1BridgeRouter
-    function setMessenger(address messengerAddress) external override onlyOwner {
+    function setMessenger(address messengerAddress) external override onlyOwnerOrAdmin {
         _setMessenger(messengerAddress);
     }
 
@@ -386,7 +386,7 @@ contract L1BridgeRouter is
     }
 
     /// @inheritdoc IL1BridgeRouter
-    function setPause(bool _status) external onlyOwner {
+    function setPause(bool _status) external onlyOwnerOrAdmin {
         if (_status) {
             _pause();
         } else {

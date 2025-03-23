@@ -5,7 +5,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
+import { NilConstants } from "../../common/libraries/NilConstants.sol";
 import { IL1ETHBridge } from "./interfaces/IL1ETHBridge.sol";
 import { IL2ETHBridge } from "../l2/interfaces/IL2ETHBridge.sol";
 import { IL1BridgeRouter } from "./interfaces/IL1BridgeRouter.sol";
@@ -13,7 +13,7 @@ import { IL1Bridge } from "./interfaces/IL1Bridge.sol";
 import { IBridge } from "../interfaces/IBridge.sol";
 import { IL1BridgeMessenger } from "./interfaces/IL1BridgeMessenger.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
-import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { L1BaseBridge } from "./L1BaseBridge.sol";
 
 /// @title L1ETHBridge

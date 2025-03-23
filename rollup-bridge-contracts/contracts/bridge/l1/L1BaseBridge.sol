@@ -5,6 +5,8 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 import { IL1Bridge } from "./interfaces/IL1Bridge.sol";
 import { IL2Bridge } from "../l2/interfaces/IL2Bridge.sol";
 import { IBridge } from "../interfaces/IBridge.sol";
@@ -12,8 +14,6 @@ import { IL1BridgeMessenger } from "./interfaces/IL1BridgeMessenger.sol";
 import { IL1BridgeRouter } from "./interfaces/IL1BridgeRouter.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
 import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
-import { NilConstants } from "../../common/libraries/NilConstants.sol";
-import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
 
 abstract contract L1BaseBridge is
   OwnableUpgradeable,
@@ -123,7 +123,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setRouter(address routerAddress) external override onlyOwner {
+  function setRouter(address routerAddress) external override onlyOwnerOrAdmin {
     router = routerAddress;
   }
 
@@ -136,7 +136,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setMessenger(address messengerAddress) external override onlyOwner {
+  function setMessenger(address messengerAddress) external override onlyOwnerOrAdmin {
     _setMessenger(messengerAddress);
   }
 
@@ -152,7 +152,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwner {
+  function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwnerOrAdmin {
     _setCounterpartyBridge(counterpartyBridgeAddress);
   }
 
@@ -168,7 +168,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setNilGasPriceOracle(address nilGasPriceOracleAddress) external override {
+  function setNilGasPriceOracle(address nilGasPriceOracleAddress) external override onlyOwnerOrAdmin {
     if (!hasRole(NilConstants.GAS_PRICE_SETTER_ROLE, msg.sender)) {
       revert UnAuthorizedCaller();
     }
@@ -193,7 +193,7 @@ abstract contract L1BaseBridge is
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IBridge
-  function setPause(bool _status) external onlyOwner {
+  function setPause(bool _status) external onlyOwnerOrAdmin {
     if (_status) {
       _pause();
     } else {

@@ -97,7 +97,7 @@ contract L2ETHBridgeVault is
   }
 
   /// @inheritdoc IL2ETHBridgeVault
-  function setL2ETHBridge(address l2ETHBridgeAddress) external override onlyAdmin {
+  function setL2ETHBridge(address l2ETHBridgeAddress) external override onlyOwnerOrAdmin {
     if (
       !l2ETHBridgeAddress.isContract() || !IERC165(l2ETHBridgeAddress).supportsInterface(type(IL2ETHBridge).interfaceId)
     ) {

@@ -8,17 +8,16 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { AccessControlEnumerableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { NilConstants } from "../../common/libraries/NilConstants.sol";
+import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
+import { Queue } from "../libraries/Queue.sol";
 import { IBridgeMessenger } from "../interfaces/IBridgeMessenger.sol";
-import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { IL1BridgeMessenger } from "./interfaces/IL1BridgeMessenger.sol";
 import { IBridgeMessenger } from "../interfaces/IBridgeMessenger.sol";
 import { IL1Bridge } from "./interfaces/IL1Bridge.sol";
 import { INilRollup } from "../../interfaces/INilRollup.sol";
-import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
-import { Queue } from "../libraries/Queue.sol";
 import { INilGasPriceOracle } from "./interfaces/INilGasPriceOracle.sol";
-import { NilConstants } from "../../common/libraries/NilConstants.sol";
-import { AddressChecker } from "../../common/libraries/AddressChecker.sol";
+import { NilAccessControlUpgradeable } from "../../NilAccessControlUpgradeable.sol";
 import { IL2BridgeMessenger } from "../l2/interfaces/IL2BridgeMessenger.sol";
 
 contract L1BridgeMessenger is
@@ -205,7 +204,9 @@ contract L1BridgeMessenger is
     //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IL1BridgeMessenger
-  function setCounterpartyBridgeMessenger(address counterpartyBridgeMessengerAddress) external override onlyAdmin {
+  function setCounterpartyBridgeMessenger(
+    address counterpartyBridgeMessengerAddress
+  ) external override onlyOwnerOrAdmin {
     _setCounterpartyBridgeMessenger(counterpartyBridgeMessengerAddress);
   }
 
@@ -223,14 +224,14 @@ contract L1BridgeMessenger is
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function authorizeBridges(address[] calldata bridges) external override onlyOwner {
+  function authorizeBridges(address[] calldata bridges) external override onlyOwnerOrAdmin {
     for (uint256 i = 0; i < bridges.length; i++) {
       _authorizeBridge(bridges[i]);
     }
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function authorizeBridge(address bridge) external override onlyOwner {
+  function authorizeBridge(address bridge) external override onlyOwnerOrAdmin {
     _authorizeBridge(bridge);
   }
 
@@ -245,7 +246,7 @@ contract L1BridgeMessenger is
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function revokeBridgeAuthorization(address bridge) external override onlyOwner {
+  function revokeBridgeAuthorization(address bridge) external override onlyOwnerOrAdmin {
     if (!authorizedBridges.contains(bridge)) {
       revert BridgeNotAuthorized();
     }
@@ -253,7 +254,7 @@ contract L1BridgeMessenger is
   }
 
   /// @inheritdoc IBridgeMessenger
-  function setPause(bool _status) external override onlyOwner {
+  function setPause(bool _status) external override onlyOwnerOrAdmin {
     if (_status) {
       _pause();
     } else {

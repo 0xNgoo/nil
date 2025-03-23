@@ -15,6 +15,7 @@ abstract contract NilAccessControlUpgradeable is
 {
   error ErrorCallerIsNotProposer();
   error ErrorCallerIsNotAdmin();
+  error ErrorCallerNotAuthorised();
 
   /*//////////////////////////////////////////////////////////////////////////
                            MODIFIERS
@@ -23,6 +24,13 @@ abstract contract NilAccessControlUpgradeable is
   modifier onlyAdmin() {
     if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender))) {
       revert ErrorCallerIsNotAdmin();
+    }
+    _;
+  }
+
+  modifier onlyOwnerOrAdmin() {
+    if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) && !(hasRole(NilConstants.OWNER_ROLE, msg.sender))) {
+      revert ErrorCallerNotAuthorised();
     }
     _;
   }
