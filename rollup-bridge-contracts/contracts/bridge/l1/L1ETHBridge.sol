@@ -85,17 +85,6 @@ contract L1ETHBridge is L1BaseBridge, IL1ETHBridge {
   }
 
   /*//////////////////////////////////////////////////////////////////////////
-                             MODIFIERS
-    //////////////////////////////////////////////////////////////////////////*/
-
-  modifier onlyRouter() {
-    if (_msgSender() != router) {
-      revert ErrorOnlyRouter();
-    }
-    _;
-  }
-
-  /*//////////////////////////////////////////////////////////////////////////
                              PUBLIC MUTATING FUNCTIONS   
     //////////////////////////////////////////////////////////////////////////*/
 
@@ -107,7 +96,7 @@ contract L1ETHBridge is L1BaseBridge, IL1ETHBridge {
     uint256 gasLimit,
     uint256 userFeePerGas, // User-defined optional maxFeePerGas
     uint256 userMaxPriorityFeePerGas // User-defined optional maxPriorityFeePerGas
-  ) external payable override {
+  ) external payable override whenNotPaused {
     _deposit(to, amount, l2FeeRefundRecipient, _msgSender(), gasLimit, userFeePerGas, userMaxPriorityFeePerGas);
   }
 
@@ -120,7 +109,7 @@ contract L1ETHBridge is L1BaseBridge, IL1ETHBridge {
     uint256 gasLimit,
     uint256 userFeePerGas, // User-defined optional maxFeePerGas
     uint256 userMaxPriorityFeePerGas // User-defined optional maxPriorityFeePerGas
-  ) public payable override onlyRouter {
+  ) public payable override onlyRouter whenNotPaused {
     _deposit(to, amount, l2FeeRefundRecipient, depositorAddress, gasLimit, userFeePerGas, userMaxPriorityFeePerGas);
   }
 
@@ -163,7 +152,10 @@ contract L1ETHBridge is L1BaseBridge, IL1ETHBridge {
   }
 
   /// @inheritdoc IL1Bridge
-  function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) public override nonReentrant {
+  function claimFailedDeposit(
+    bytes32 messageHash,
+    bytes32[] memory claimProof
+  ) public override nonReentrant whenNotPaused {
     IL1BridgeMessenger.DepositMessage memory depositMessage = IL1BridgeMessenger(messenger).getDepositMessage(
       messageHash
     );

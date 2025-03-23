@@ -72,17 +72,6 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
   }
 
   /*//////////////////////////////////////////////////////////////////////////
-                             MODIFIERS
-    //////////////////////////////////////////////////////////////////////////*/
-
-  modifier onlyRouter() {
-    if (_msgSender() != router) {
-      revert ErrorOnlyRouter();
-    }
-    _;
-  }
-
-  /*//////////////////////////////////////////////////////////////////////////
                              PUBLIC MUTATING FUNCTIONS   
     //////////////////////////////////////////////////////////////////////////*/
 
@@ -95,7 +84,7 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
     uint256 l2GasLimit,
     uint256 userFeePerGas,
     uint256 userMaxPriorityFeePerGas
-  ) external payable override {
+  ) external payable override whenNotPaused {
     _deposit(
       token,
       l2DepositRecipient,
@@ -117,7 +106,7 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
     uint256 l2GasLimit,
     uint256 userFeePerGas,
     uint256 userMaxPriorityFeePerGas
-  ) public payable override onlyRouter {
+  ) public payable override onlyRouter whenNotPaused {
     _deposit(
       token,
       l2DepositRecipient,
@@ -136,7 +125,7 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
   }
 
   /// @inheritdoc IL1Bridge
-  function cancelDeposit(bytes32 messageHash) public override nonReentrant {
+  function cancelDeposit(bytes32 messageHash) public override nonReentrant whenNotPaused {
     address caller = _msgSender();
 
     // get DepositMessageDetails
@@ -173,7 +162,10 @@ contract L1ERC20Bridge is L1BaseBridge, IL1ERC20Bridge {
   }
 
   /// @inheritdoc IL1Bridge
-  function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) public override nonReentrant {
+  function claimFailedDeposit(
+    bytes32 messageHash,
+    bytes32[] memory claimProof
+  ) public override nonReentrant whenNotPaused {
     IL1BridgeMessenger.DepositMessage memory depositMessage = IL1BridgeMessenger(messenger).getDepositMessage(
       messageHash
     );

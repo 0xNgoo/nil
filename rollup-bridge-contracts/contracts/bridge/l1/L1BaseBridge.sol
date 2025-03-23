@@ -46,6 +46,8 @@ abstract contract L1BaseBridge is
   /// @dev Empty deposit.
   error ErrorEmptyDeposit();
 
+  error ErrorOnlyRouter();
+
   /*//////////////////////////////////////////////////////////////////////////
                              STATE-VARIABLES   
     //////////////////////////////////////////////////////////////////////////*/
@@ -122,8 +124,23 @@ abstract contract L1BaseBridge is
     _setNilGasPriceOracle(nilGasPriceOracleAddress);
   }
 
+  /*//////////////////////////////////////////////////////////////////////////
+                             MODIFIERS  
+    //////////////////////////////////////////////////////////////////////////*/
+
+  modifier onlyRouter() {
+    if (_msgSender() != router) {
+      revert ErrorOnlyRouter();
+    }
+    _;
+  }
+
+  /*//////////////////////////////////////////////////////////////////////////
+                             RESTRICTED FUNCTIONS  
+    //////////////////////////////////////////////////////////////////////////*/
+
   /// @inheritdoc IL1Bridge
-  function setRouter(address routerAddress) external override onlyOwnerOrAdmin {
+  function setRouter(address routerAddress) external override onlyOwnerOrAdmin whenNotPaused {
     router = routerAddress;
   }
 
@@ -136,7 +153,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setMessenger(address messengerAddress) external override onlyOwnerOrAdmin {
+  function setMessenger(address messengerAddress) external override onlyOwnerOrAdmin whenNotPaused {
     _setMessenger(messengerAddress);
   }
 
@@ -152,7 +169,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwnerOrAdmin {
+  function setCounterpartyBridge(address counterpartyBridgeAddress) external override onlyOwnerOrAdmin whenNotPaused {
     _setCounterpartyBridge(counterpartyBridgeAddress);
   }
 
@@ -168,7 +185,7 @@ abstract contract L1BaseBridge is
   }
 
   /// @inheritdoc IL1Bridge
-  function setNilGasPriceOracle(address nilGasPriceOracleAddress) external override onlyOwnerOrAdmin {
+  function setNilGasPriceOracle(address nilGasPriceOracleAddress) external override onlyOwnerOrAdmin whenNotPaused {
     if (!hasRole(NilConstants.GAS_PRICE_SETTER_ROLE, msg.sender)) {
       revert UnAuthorizedCaller();
     }
@@ -187,10 +204,6 @@ abstract contract L1BaseBridge is
     emit NilGasPriceOracleSet(nilGasPriceOracle, nilGasPriceOracleAddress);
     nilGasPriceOracle = nilGasPriceOracleAddress;
   }
-
-  /*//////////////////////////////////////////////////////////////////////////
-                             RESTRICTED FUNCTIONS   
-    //////////////////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IBridge
   function setPause(bool _status) external onlyOwnerOrAdmin {

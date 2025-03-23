@@ -73,7 +73,7 @@ contract L2EnshrinedTokenBridge is L2BaseBridge, IL2EnshrinedTokenBridge {
     address feeRefundRecipient,
     uint256 depositAmount,
     bytes calldata additionalData
-  ) external payable override onlyMessenger nonReentrant {
+  ) external payable override onlyMessenger nonReentrant whenNotPaused {
     if (l1Token.isContract()) {
       revert ErrorInvalidL1TokenAddress();
     }

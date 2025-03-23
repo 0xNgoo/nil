@@ -110,7 +110,7 @@ contract L2ETHBridgeVault is
   }
 
   /// @inheritdoc IL2ETHBridgeVault
-  function transferETH(address payable recipient, uint256 amount) external nonReentrant {
+  function transferETH(address payable recipient, uint256 amount) external nonReentrant whenNotPaused {
     if (msg.sender != address(l2ETHBridge)) {
       revert ErrorCallerNotL2ETHBridge();
     }

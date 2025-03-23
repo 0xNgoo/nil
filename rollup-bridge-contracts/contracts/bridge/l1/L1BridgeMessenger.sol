@@ -381,7 +381,7 @@ contract L1BridgeMessenger is
   }
 
   /// @inheritdoc IL1BridgeMessenger
-  function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) public override {
+  function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) public override whenNotPaused {
     DepositMessage storage depositMessage = depositMessages[messageHash];
     if (depositMessage.expiryTime == 0) {
       revert DepositMessageDoesNotExist(messageHash);

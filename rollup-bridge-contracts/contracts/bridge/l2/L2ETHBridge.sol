@@ -74,7 +74,7 @@ contract L2ETHBridge is L2BaseBridge, IL2ETHBridge {
     address payable depositRecipient,
     address feeRefundRecipient,
     uint256 amount
-  ) public payable onlyMessenger {
+  ) public payable onlyMessenger whenNotPaused {
     // get recipient balance before ETH transfer
     uint256 befBalance = depositRecipient.balance;
 

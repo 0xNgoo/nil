@@ -191,6 +191,7 @@ contract L1BridgeRouter is
         payable
         override
         onlyNotInContext
+        whenNotPaused
     {
         if (token == address(0)) {
             revert ErrorInvalidTokenAddress();
@@ -243,6 +244,7 @@ contract L1BridgeRouter is
         payable
         override
         onlyNotInContext
+        whenNotPaused
     {
         if (ethBridge == address(0)) {
             revert ErrorInvalidL1ETHBridgeAddress();
@@ -282,7 +284,7 @@ contract L1BridgeRouter is
     }
 
     /// @inheritdoc IL1BridgeRouter
-    function cancelDeposit(bytes32 messageHash) external payable {
+    function cancelDeposit(bytes32 messageHash) external payable whenNotPaused {
         // Get the deposit message from the messenger
         NilConstants.MessageType messageType = messenger.getMessageType(messageHash);
 
@@ -297,7 +299,7 @@ contract L1BridgeRouter is
     }
 
     /// @inheritdoc IL1BridgeRouter
-    function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) external override {
+    function claimFailedDeposit(bytes32 messageHash, bytes32[] memory claimProof) external override whenNotPaused {
         // Get the deposit message from the messenger
         NilConstants.MessageType messageType = messenger.getMessageType(messageHash);
 
